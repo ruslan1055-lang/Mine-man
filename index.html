@@ -311,8 +311,7 @@ body.mp.ingame #mpChatBtn{display:block}
   <h2 class="mc-h" id="auTitle">Вход</h2>
   <div class="mc-body one">
     <div class="mp-tabs"><button class="mcb sm pri" id="auTabIn">Вход</button><button class="mcb sm" id="auTabUp">Регистрация</button></div>
-    <div id="auNickW"><div class="cr-lbl">Ник (3–16: буквы, цифры, _)</div><input class="cr-input" id="auNick" maxlength="16" autocomplete="off" spellcheck="false"></div>
-    <div><div class="cr-lbl">Email</div><input class="cr-input" id="auMail" type="email" autocomplete="email" spellcheck="false"></div>
+    <div><div class="cr-lbl" id="auNickL">Ник</div><input class="cr-input" id="auNick" maxlength="16" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
     <div><div class="cr-lbl">Пароль (от 6 символов)</div><input class="cr-input" id="auPass" type="password" autocomplete="current-password"></div>
     <div class="mc-note mp-err" id="auErr"></div>
   </div>
@@ -1615,7 +1614,7 @@ let fb=null,auth=null,db=null,user=null,nick='',sdkP=null;
 /* ---------- утилиты ---------- */
 function toast(t){const e=$('mpToast');e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,2600)}
 function msg(t,b){$('msgT').textContent=t;$('msgB').textContent=b||'';UI.open('mMsg')}
-const ER={'auth/email-already-in-use':'Этот email уже зарегистрирован.','auth/invalid-email':'Неверный email.','auth/weak-password':'Пароль слишком короткий (минимум 6 символов).','auth/wrong-password':'Неверный пароль.','auth/user-not-found':'Аккаунт не найден.','auth/invalid-credential':'Неверный email или пароль.','auth/too-many-requests':'Слишком много попыток. Подожди немного.','auth/network-request-failed':'Нет соединения с интернетом.','auth/operation-not-allowed':'В Firebase не включён вход по Email/паролю (Authentication → Sign-in method).','auth/operation-not-supported-in-this-environment':'Вход не работает, если открыть файл напрямую (file://). Размести игру на хостинге или запусти через localhost.'};
+const ER={'auth/email-already-in-use':'Этот ник уже занят.','auth/invalid-email':'Неверный ник.','auth/weak-password':'Пароль слишком короткий (минимум 6 символов).','auth/wrong-password':'Неверный пароль.','auth/user-not-found':'Аккаунт не найден.','auth/invalid-credential':'Неверный ник или пароль.','auth/too-many-requests':'Слишком много попыток. Подожди немного.','auth/network-request-failed':'Нет соединения с интернетом.','auth/operation-not-allowed':'В Firebase не включён вход по Email/паролю (Authentication → Sign-in method).','auth/operation-not-supported-in-this-environment':'Вход не работает, если открыть файл напрямую (file://). Размести игру на хостинге или запусти через localhost.'};
 function em(e){if(e&&ER[e.code])return ER[e.code];const m=(e&&e.message)||'Ошибка';if(/permission[_ ]denied/i.test(m))return 'Нет прав доступа: проверь правила Realtime Database.';return m}
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Не удалось загрузить Firebase SDK (нет интернета?)'));document.head.appendChild(s)})}
 function loadSDK(){
@@ -1642,20 +1641,26 @@ function paintAcc(){
   $('mpAuthBtn').textContent=user?'Выйти':'Войти / Регистрация'}
 let auMode='in';
 function setAuMode(m){auMode=m;$('auTitle').textContent=m==='in'?'Вход':'Регистрация';$('auOk').textContent=m==='in'?'Войти':'Создать аккаунт';
-  $('auNickW').style.display=m==='up'?'':'none';$('auTabIn').classList.toggle('pri',m==='in');$('auTabUp').classList.toggle('pri',m==='up');$('auErr').textContent='';
+  $('auNickL').textContent=m==='in'?'Ник':'Ник (3–16: буквы, цифры, _)';$('auNick').maxLength=m==='in'?64:16;$('auTabIn').classList.toggle('pri',m==='in');$('auTabUp').classList.toggle('pri',m==='up');$('auErr').textContent='';
   $('auPass').autocomplete=m==='in'?'current-password':'new-password'}
-function openAuth(m){setAuMode(m||'in');UI.open('mAuth');setTimeout(()=>{try{$(auMode==='up'?'auNick':'auMail').focus()}catch(e){}},80)}
+function openAuth(m){setAuMode(m||'in');UI.open('mAuth');setTimeout(()=>{try{$('auNick').focus()}catch(e){}},80)}
 $('auTabIn').onclick=()=>setAuMode('in');$('auTabUp').onclick=()=>setAuMode('up');
 let auBusy=false;
+/* Ник → служебный email для Firebase (пользователь его не видит) */
+const NICK_RE=/^[A-Za-z0-9_А-Яа-яЁё]{3,16}$/;
+const nick2mail=n=>{let s='';for(const ch of n.toLowerCase())s+=/[a-z0-9_]/.test(ch)?ch:'-'+ch.codePointAt(0).toString(36).padStart(2,'0');return 'p.'+s+'@mineman.game'};
 async function doAuth(){
-  if(auBusy)return;const mail=$('auMail').value.trim(),pass=$('auPass').value,err=$('auErr');err.textContent='';
-  if(!mail||!pass){err.textContent='Заполни email и пароль.';return}
+  if(auBusy)return;const n=$('auNick').value.trim(),pass=$('auPass').value,err=$('auErr');err.textContent='';
+  if(!n||!pass){err.textContent='Заполни ник и пароль.';return}
+  let mail;
+  if(auMode==='in'&&n.includes('@'))mail=n; /* старые аккаунты, созданные по настоящему email */
+  else{
+    if(!NICK_RE.test(n)){err.textContent=auMode==='in'?'Неверный ник.':'Ник: 3–16 символов (буквы, цифры, _).';return}
+    mail=nick2mail(n)}
   auBusy=true;$('auOk').disabled=true;
   try{
     if(auMode==='in'){await auth.signInWithEmailAndPassword(mail,pass)}
     else{
-      const n=$('auNick').value.trim();
-      if(!/^[A-Za-z0-9_А-Яа-яЁё]{3,16}$/.test(n))throw{message:'Ник: 3–16 символов (буквы, цифры, _).'};
       const cred=await auth.createUserWithEmailAndPassword(mail,pass),u=cred.user;
       try{
         const tr=await db.ref('usernames/'+n.toLowerCase()).transaction(v=>v===null?u.uid:undefined);
@@ -1668,7 +1673,7 @@ async function doAuth(){
   }catch(e){err.textContent=em(e)}
   auBusy=false;$('auOk').disabled=false}
 $('auOk').onclick=doAuth;
-['auNick','auMail','auPass'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')doAuth()}));
+['auNick','auPass'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')doAuth()}));
 $('mpAuthBtn').onclick=async()=>{if(user){try{await auth.signOut()}catch(e){}toast('Ты вышел из аккаунта');SV=[];SEL=null;renderServers()}else openAuth('in')};
 
 /* ---------- список серверов ---------- */
