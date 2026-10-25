@@ -178,6 +178,15 @@ body.mp.ingame #mpHud{display:block}
 #mpBox{display:none;margin-top:6px;pointer-events:auto}
 #mpHud.typing #mpBox{display:block}
 #mpIn{width:100%;height:38px;background:rgba(0,0,0,.75);border:3px solid #a0a0a0;color:#fff;font-family:'Nunito',system-ui,sans-serif;font-weight:800;font-size:14px;padding:0 10px;outline:none;border-radius:0;user-select:text;-webkit-user-select:text}
+#pSkin{display:none}body.mp #pSkin{display:block}
+.sk-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sk-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px 10px;border:4px solid #000;background:rgba(0,0,0,.45);cursor:pointer;color:#fff;font-family:MCF,monospace;text-shadow:2px 2px 0 #222;box-shadow:inset 3px 3px 0 rgba(255,255,255,.12),inset -3px -3px 0 rgba(0,0,0,.4);min-width:0}
+.sk-card:hover{background:rgba(60,60,90,.55)}
+.sk-card canvas{width:100%;max-width:160px;aspect-ratio:160/220;background:linear-gradient(#4f86c0,#9ccdf0 62%,#6a9a4a 62%,#4f7a36);border:3px solid #000}
+.sk-card b{font-weight:400;font-size:clamp(9px,2.6vw,12px);color:#ffd24a}
+.sk-card small{font-size:clamp(8px,2.2vw,10px);color:#c8c8c8;text-shadow:1px 1px 0 #111;font-family:'Nunito',system-ui,sans-serif;font-weight:800;line-height:1.25;text-align:center}
+.sk-card.on{border-color:#aef09a;background:rgba(40,110,40,.55)}
+.sk-card.on i{visibility:visible}.sk-card i{visibility:hidden;font-style:normal;font-size:9px;color:#aef09a}
 #mpChatBtn{position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top));z-index:9999;width:44px;height:44px;display:none;border:3px solid #000;background:rgba(0,0,0,.55);color:#fff;font-size:20px;cursor:pointer;padding:0}
 body.mp.ingame #mpChatBtn{display:block}
 </style>
@@ -240,6 +249,7 @@ body.mp.ingame #mpChatBtn{display:block}
     <div class="mc-note" id="pInfo"></div>
     <button class="mcb pri" id="pCont">Продолжить</button>
     <button class="mcb" id="pNew">Новый мир</button>
+    <button class="mcb" id="pSkin">Скин</button>
     <button class="mcb" id="pSet">Настройки</button>
     <button class="mcb red" id="pQuit">Выйти в меню</button>
   </div>
@@ -298,7 +308,7 @@ body.mp.ingame #mpChatBtn{display:block}
 <div class="mc-screen" id="sMulti">
   <div class="ws-head">
     <h2 class="ws-title">Multiplayer</h2>
-    <div class="mp-acc"><span id="mpAcc"></span><button class="mcb sm" id="mpAuthBtn">Войти</button></div>
+    <div class="mp-acc"><span id="mpAcc"></span><button class="mcb sm" id="mpAuthBtn">Войти</button><button class="mcb sm" id="mpSkinBtn">🎭 Скин</button></div>
     <input class="cr-input" id="mpSearch" placeholder="Поиск сервера…" autocomplete="off" spellcheck="false">
   </div>
   <div class="ws-list"><div class="ws-in" id="mpList"></div></div>
@@ -333,6 +343,11 @@ body.mp.ingame #mpChatBtn{display:block}
 <div class="mc-modal" id="mCloud"><div class="mc-panel" style="width:min(94vw,600px)">
   <h2 class="mc-h">☁ Облачные миры</h2>
   <div class="mc-body one" id="clBody"></div>
+  <div class="mc-foot"><button class="mcb pri" data-close>Готово</button></div>
+</div></div>
+<div class="mc-modal" id="mSkin"><div class="mc-panel" style="width:min(96vw,620px)">
+  <h2 class="mc-h">Выбор скина</h2>
+  <div class="mc-body one"><div class="mc-note">Этот человечек будет виден другим игрокам на сервере — с твоим ником над головой.</div><div class="sk-grid" id="skList"></div></div>
   <div class="mc-foot"><button class="mcb pri" data-close>Готово</button></div>
 </div></div>
 <div class="mc-modal" id="mMsg"><div class="mc-panel" style="width:min(92vw,480px)">
@@ -624,7 +639,7 @@ function gen(cx,cz){if(WT=='flat'||WT=='sky'||WT=='one')return genSp(cx,cz);cons
  for(let z=0;z<CS;z++)for(let x=0;x<CS;x++)c.top[z*CS+x]=colTop(c,x,z);
  chunks.set(key(cx,cz),c);lcx=1e9;return c}
 /* меши */
-let THREE_,scene,cam,renderer,matO,matW,hl,crack,act=false,raf=0,last=0,ready=false,inited=false,noLock=false,sx=0,sz=0,OFF=[];
+let THREE_,scene,cam,renderer,matO,matW,hl,crack,act=false,raf=0,last=0,ready=false,inited=false,noLock=false,sx=0,sz=0,rdy0=0,OFF=[];
 const FC=[{d:[-1,0,0],s:.78,c:[[0,1,0,0,1],[0,0,0,0,0],[0,1,1,1,1],[0,0,1,1,0]]},{d:[1,0,0],s:.78,c:[[1,1,1,0,1],[1,0,1,0,0],[1,1,0,1,1],[1,0,0,1,0]]},
  {d:[0,-1,0],s:.5,c:[[1,0,1,1,0],[0,0,1,0,0],[1,0,0,1,1],[0,0,0,0,1]]},{d:[0,1,0],s:1,c:[[0,1,1,1,1],[1,1,1,0,1],[0,1,0,1,0],[1,1,0,0,0]]},
  {d:[0,0,-1],s:.66,c:[[1,0,0,0,0],[0,0,0,1,0],[1,1,0,0,1],[0,1,0,1,1]]},{d:[0,0,1],s:.66,c:[[0,0,1,0,0],[1,0,1,1,0],[0,1,1,0,1],[1,1,1,1,1]]}];
@@ -789,7 +804,7 @@ function manage(){const cx=Math.floor(P.x)>>4,cz=Math.floor(P.z)>>4;
  for(const o of OFF){if(o[0]*o[0]+o[1]*o[1]>RD*RD)break;const c=gC(cx+o[0],cz+o[1]);if(c&&c.dirty&&gC(c.cx+1,c.cz)&&gC(c.cx-1,c.cz)&&gC(c.cx,c.cz+1)&&gC(c.cx,c.cz-1)){build(c);if(performance.now()-t0>B+4)break}}}
 /* цикл */
 function loop(t){if(!act)return;raf=requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000||0);last=t;if(!mmTick(dt))return;manage();
- if(!ready){let ok=true;for(let dz=-2;dz<=2;dz++)for(let dx=-2;dx<=2;dx++){const c=gC(sx+dx,sz+dz);if(!c||!c.built)ok=false}if(ok){ready=true;$('mmLoad').style.display='none'}}
+ if(!ready){/* ждём чанки вокруг ИГРОКА (а не вокруг точки спавна), иначе при сохранённой далёкой позиции мир вечно «генерируется» */const px=Math.floor(P.x)>>4,pz=Math.floor(P.z)>>4;if(!rdy0)rdy0=performance.now();const RR=performance.now()-rdy0>15000?1:2;let ok=true;for(let dz=-RR;dz<=RR;dz++)for(let dx=-RR;dx<=RR;dx++){const c=gC(px+dx,pz+dz);if(!c||!c.built)ok=false}if(ok){ready=true;rdy0=0;$('mmLoad').style.display='none'}}
  if(ready){fix();phys(dt);edgeClamp();
   const tg=ray();hl.visible=!!tg;if(tg)hl.position.set(tg.x+.5,tg.y+.5,tg.z+.5);
   const blk=mine&&tg&&!canMine(tg.id);if(blk){if(!mmBlk){mmBlk=1;$('mmName').textContent='⛔ Нужна '+NEEDN[REQ[tg.id]]+' кирка или лучше'}}else if(mmBlk){mmBlk=0;drawBar()}
@@ -802,7 +817,7 @@ function loop(t){if(!act)return;raf=requestAnimationFrame(loop);const dt=Math.mi
  const iw=getB(Math.floor(P.x),Math.floor(P.y+EYE),Math.floor(P.z))==6;$('mmWater').style.display=iw?'block':'none';scene.fog.near=iw?.5:(RD-1.5)*CS;scene.fog.far=iw?14:RD*CS;
  if(++fr%12==0){const h=hgt(Math.floor(P.x),Math.floor(P.z));$('mmInfo').textContent='X '+Math.floor(P.x)+' Y '+Math.floor(P.y)+' Z '+Math.floor(P.z)+' · '+BN[biome(Math.floor(P.x),Math.floor(P.z),h)]}
  mobFrame(dt);fxFrame();renderer.render(scene,cam)}
-function newWorld(){survReset();mobClear();furns.clear();mmFurnClose();for(const c of chunks.values())freeMesh(c);chunks.clear();lcx=1e9;mods.clear();chests.clear();chOpen.clear();if(window._mmPend)mmApplyA(window._mmPend);big.forEach(b=>{b.id=0;b.n=0});pcx=pcz=1e9;ready=false;$('mmLoad').style.display='flex';
+function newWorld(){survReset();mobClear();furns.clear();mmFurnClose();for(const c of chunks.values())freeMesh(c);chunks.clear();lcx=1e9;mods.clear();chests.clear();chOpen.clear();if(window._mmPend)mmApplyA(window._mmPend);big.forEach(b=>{b.id=0;b.n=0});pcx=pcz=1e9;ready=false;rdy0=0;$('mmLoad').style.display='flex';
  {const sd=(WORLD&&WORLD.seed!=null)?WORLD.seed:((Math.random()*1e9)|0);setSeed(sd);if(WORLD)WORLD.seed=sd}OBC=0;spawn();inv=[];const SK=['pk','sb','gl','c0','br','qz'];for(let i=0;i<9;i++)inv.push(i<6&&MODE!='survival'?{id:ID[SK[i]],n:999}:{id:0,n:0});sel=0;drawBar();mine=plHeld=false;emGrant();if(window._mmPend){mmApplyB(window._mmPend);window._mmPend=null}}
 /* ===== КРАСИВАЯ ГРАФИКА (можно выключить кнопкой ✨) ===== */
 /* ===== ЛИМИТЫ ВРЕМЕНИ: MAX — безлимит; бесплатно — 1 ч творческий + 2 ч выживание в день ===== */
@@ -1324,7 +1339,7 @@ function mmApplyB(d){try{
  if(d.inv)d.inv.forEach((q,i)=>{if(inv[i]){inv[i].id=q.id|0;inv[i].n=q.n|0}});
  if(d.big)d.big.forEach((q,i)=>{if(big[i]){big[i].id=q.id|0;big[i].n=q.n|0}});
  sel=Math.max(0,Math.min(8,d.sel|0));
- if(d.P&&d.P.y>-10){P.x=d.P.x;P.y=d.P.y;P.z=d.P.z;P.yaw=d.P.yaw||0;P.pit=d.P.pit||0;P.vx=P.vy=P.vz=0}
+ if(d.P&&d.P.y>-10){P.x=d.P.x;P.y=d.P.y;P.z=d.P.z;P.yaw=d.P.yaw||0;P.pit=d.P.pit||0;P.vx=P.vy=P.vz=0;sx=Math.floor(P.x)>>4;sz=Math.floor(P.z)>>4}
  if(d.HP>0)HP=d.HP;if(d.FOOD>=0)FOOD=d.FOOD;OBC=d.OBC|0;
  drawBar();drawBig()}catch(e){console.error(e)}}
 window.MM_API={
@@ -1601,6 +1616,84 @@ window.MP_FIREBASE_CONFIG = {
   appId: "1:323530904604:web:fa7f8a688e99e93312fbd9"
 };
 </script>
+<script id="mpSkins">
+/* ===== Скины игроков (3 штуки): текстуры 64×32 рисуются кодом, модель собирается из боксов ===== */
+(function(){
+'use strict';
+var U=1.8/32;
+var PT={head:{u:0,v:0,w:8,h:8,d:8},body:{u:16,v:16,w:8,h:12,d:4},arm:{u:40,v:16,w:4,h:12,d:4},leg:{u:0,v:16,w:4,h:12,d:4}};
+function rc(p){var u=p.u,v=p.v,w=p.w,h=p.h,d=p.d;return{top:[u+d,v,w,d],bottom:[u+d+w,v,w,d],right:[u,v+d,d,h],front:[u+d,v+d,w,h],left:[u+d+w,v+d,d,h],back:[u+2*d+w,v+d,w,h]}}
+function hash(a,b){var h=(a*374761393+b*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967295}
+function hx(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function cl(v){return Math.max(0,Math.min(255,Math.round(v)))}
+function mk(ctx){
+  function N(r,base,amp,seed){var c=hx(base);for(var y=0;y<r[3];y++)for(var x=0;x<r[2];x++){var k=1+(hash(x+r[0]*3+seed*11,y+r[1]*7+seed*5)-.5)*amp;ctx.fillStyle='rgb('+cl(c[0]*k)+','+cl(c[1]*k)+','+cl(c[2]*k)+')';ctx.fillRect(r[0]+x,r[1]+y,1,1)}}
+  function P(r,x,y,c,w,h){ctx.fillStyle=c;ctx.fillRect(r[0]+x,r[1]+y,w||1,h||1)}
+  function S(r,x,y,w,h,base,amp,seed){N([r[0]+x,r[1]+y,w,h],base,amp,seed)}
+  function all(R,base,amp,seed){['top','bottom','right','front','left','back'].forEach(function(k,i){N(R[k],base,amp,seed+i)})}
+  return{N:N,P:P,S:S,all:all}
+}
+var SK=[
+{name:'Путник',desc:'Зелёная куртка и рюкзак',tagY:2.2,
+ paint:function(c){var H=rc(PT.head),B=rc(PT.body),A=rc(PT.arm),L=rc(PT.leg),m=mk(c),SKIN='#e8b48c',HAIR='#5b3a21',G='#3f9b4e',GD='#2f7a3b',J='#3b4f8c',BO='#4a3020';
+  m.all(H,SKIN,.1,1);m.N(H.top,HAIR,.2,2);m.N(H.back,HAIR,.2,3);
+  m.S(H.right,0,0,8,2,HAIR,.2,4);m.S(H.right,0,2,3,3,HAIR,.2,5);m.S(H.left,0,0,8,2,HAIR,.2,6);m.S(H.left,5,2,3,3,HAIR,.2,7);
+  m.S(H.front,0,0,8,2,HAIR,.2,8);m.P(H.front,0,2,HAIR);m.P(H.front,7,2,HAIR);
+  m.P(H.front,1,3,HAIR,2,1);m.P(H.front,5,3,HAIR,2,1);
+  m.P(H.front,1,4,'#fff');m.P(H.front,2,4,'#2b3f7a');m.P(H.front,5,4,'#2b3f7a');m.P(H.front,6,4,'#fff');
+  m.P(H.front,3,5,'#d29a74',2,1);m.P(H.front,2,6,'#b9785a',4,1);
+  m.all(B,G,.12,20);m.S(B.front,0,0,8,2,'#58b866',.1,30);m.P(B.front,3,2,'#e8f5e8');m.P(B.front,4,2,'#e8f5e8');m.P(B.front,3,3,'#e8f5e8');m.P(B.front,4,3,'#e8f5e8');
+  m.S(B.front,1,7,6,4,GD,.12,31);m.S(B.front,1,7,6,1,'#4aa95a',.1,32);m.S(B.front,0,11,8,1,GD,.1,33);m.S(B.back,0,0,8,4,GD,.12,34);m.S(B.back,0,11,8,1,GD,.1,35);
+  ['front','back','left','right'].forEach(function(k,i){m.N(A[k],G,.12,40+i);m.S(A[k],0,8,4,1,GD,.1,50+i);m.S(A[k],0,9,4,3,SKIN,.1,60+i)});m.N(A.top,G,.12,45);m.N(A.bottom,SKIN,.1,46);
+  ['front','back','left','right'].forEach(function(k,i){m.N(L[k],J,.14,70+i);m.S(L[k],0,10,4,2,BO,.16,80+i)});m.N(L.top,J,.14,75);m.N(L.bottom,BO,.16,76);m.P(L.front,1,3,'#2f4075',2,1);m.P(L.front,0,9,'#2f4075',4,1)},
+ extras:function(T,x){var pk=x.box(.34,.44,.16,'#7a5230',0,1.06,.21,x.g),fl=x.box(.35,.12,.17,'#5e3e22',0,1.24,.21,x.g);x.box(.04,.4,.02,'#3a2616',.1,1.06,-.12,x.g);x.box(.04,.4,.02,'#3a2616',-.1,1.06,-.12,x.g)}},
+{name:'Рыцарь',desc:'Стальные доспехи с красным плюмажем',tagY:2.3,
+ paint:function(c){var H=rc(PT.head),B=rc(PT.body),A=rc(PT.arm),L=rc(PT.leg),m=mk(c),ST='#aab2bd',SD='#7e8794',GO='#e6b422',RD='#c0392b';
+  m.all(H,ST,.12,1);['right','left','front','back'].forEach(function(k,i){m.S(H[k],0,0,8,1,SD,.1,5+i);m.S(H[k],0,7,8,1,SD,.1,9+i)});
+  m.S(H.front,0,3,8,2,'#20242b',.05,13);m.S(H.front,0,2,8,1,'#c8cfd8',.08,14);for(var i=0;i<3;i++)m.P(H.front,2+i*2,6,SD);
+  m.S(H.top,3,0,2,8,RD,.12,15);m.S(H.back,3,0,2,5,RD,.12,16);m.S(H.right,3,3,2,2,'#20242b',.05,17);m.S(H.left,3,3,2,2,'#20242b',.05,18);
+  m.all(B,'#9aa3af',.12,20);m.S(B.front,3,2,2,5,GO,.08,30);m.S(B.front,2,3,4,2,GO,.08,31);m.S(B.front,0,9,8,2,'#6b4a2b',.1,32);m.S(B.front,3,9,2,2,GO,.06,33);m.S(B.front,3,0,2,12,SD,.0,34);
+  m.S(B.back,3,0,2,12,SD,.1,35);m.S(B.back,0,9,8,2,'#6b4a2b',.1,36);
+  ['front','back','left','right'].forEach(function(k,i){m.N(A[k],ST,.12,40+i);m.S(A[k],0,0,4,3,SD,.1,50+i);m.S(A[k],0,8,4,1,GO,.06,55+i);m.S(A[k],0,9,4,3,SD,.12,60+i)});m.N(A.top,SD,.1,45);m.N(A.bottom,SD,.1,46);
+  ['front','back','left','right'].forEach(function(k,i){m.N(L[k],'#9aa3af',.12,70+i);m.S(L[k],0,10,4,2,'#4a4f58',.14,80+i)});m.S(L.front,1,5,2,2,GO,.06,90);m.S(L.front,0,0,4,1,SD,.1,91);m.N(L.top,SD,.1,75);m.N(L.bottom,'#4a4f58',.14,76)},
+ extras:function(T,x){x.box(.1,.15,.5,'#c0392b',0,.07,0,x.head);x.box(.1,.1,.12,'#a82f23',0,.17,.2,x.head);x.box(.31,.12,.31,'#aab2bd',0,-.01,0,x.armL);x.box(.31,.12,.31,'#aab2bd',0,-.01,0,x.armR);x.box(.33,.04,.33,'#e6b422',0,-.075,0,x.armL);x.box(.33,.04,.33,'#e6b422',0,-.075,0,x.armR)}},
+{name:'Маг',desc:'Фиолетовая мантия и острая шляпа',tagY:2.75,
+ paint:function(c){var H=rc(PT.head),B=rc(PT.body),A=rc(PT.arm),L=rc(PT.leg),m=mk(c),SKIN='#e0b08a',WH='#eeeeee',PU='#6b3fa0',PD='#4a2a7a',GO='#e6b422';
+  m.all(H,SKIN,.1,1);m.N(H.top,'#4a2a7a',.12,2);m.S(H.back,0,0,8,8,'#d8d8d8',.14,3);m.S(H.right,0,0,8,2,'#d8d8d8',.14,4);m.S(H.right,0,2,4,6,'#d8d8d8',.14,5);m.S(H.left,0,0,8,2,'#d8d8d8',.14,6);m.S(H.left,4,2,4,6,'#d8d8d8',.14,7);
+  m.S(H.front,0,0,8,2,'#d8d8d8',.14,8);m.P(H.front,1,3,WH,2,1);m.P(H.front,5,3,WH,2,1);
+  m.P(H.front,1,4,'#fff');m.P(H.front,2,4,'#37c8f0');m.P(H.front,5,4,'#37c8f0');m.P(H.front,6,4,'#fff');
+  m.S(H.front,0,5,8,3,WH,.12,9);m.P(H.front,3,5,'#d6a07a',2,1);m.S(H.right,0,5,8,3,WH,.12,10);m.S(H.left,0,5,8,3,WH,.12,11);
+  m.all(B,PU,.12,20);m.S(B.front,3,0,2,12,GO,.08,30);m.P(B.front,3,3,'#ffe27a',2,2);m.S(B.front,0,8,8,1,GO,.06,31);m.S(B.front,0,9,8,3,PD,.12,32);m.S(B.front,0,11,8,1,GO,.06,33);
+  m.S(B.back,0,9,8,3,PD,.12,34);m.S(B.back,0,11,8,1,GO,.06,35);
+  ['front','back','left','right'].forEach(function(k,i){m.N(A[k],PU,.12,40+i);m.S(A[k],0,8,4,1,GO,.06,50+i);m.S(A[k],0,9,4,3,SKIN,.1,60+i)});m.N(A.top,PU,.12,45);m.N(A.bottom,SKIN,.1,46);
+  ['front','back','left','right'].forEach(function(k,i){m.N(L[k],'#3a2a66',.14,70+i);m.S(L[k],0,10,4,2,'#2a1a10',.16,80+i)});m.N(L.top,'#3a2a66',.14,75);m.N(L.bottom,'#2a1a10',.16,76)},
+ extras:function(T,x){var h=x.head,PD='#4a2a7a';x.box(.64,.05,.64,PD,0,.225,0,h);x.box(.46,.07,.46,'#e6b422',0,.285,0,h);x.box(.42,.16,.42,PD,0,.4,.0,h);x.box(.32,.16,.32,PD,0,.56,.02,h);x.box(.22,.14,.22,PD,0,.71,.05,h);x.box(.12,.12,.12,PD,0,.84,.09,h);
+  x.box(.52,.36,.3,'#4a2a7a',0,.5,0,x.g);x.box(.54,.04,.32,'#e6b422',0,.33,0,x.g)}}
+];
+function texCanvas(id){var c=document.createElement('canvas');c.width=64;c.height=32;SK[id].paint(c.getContext('2d'));return c}
+function boxGeo(T,w,h,d,part){var g=new T.BoxGeometry(w*U,h*U,d*U),uv=g.attributes.uv,R=rc(part),o=[R.right,R.left,R.top,R.bottom,R.back,R.front];
+  for(var f=0;f<6;f++){var r=o[f],u0=r[0]/64,u1=(r[0]+r[2])/64,v0=1-r[1]/32,v1=1-(r[1]+r[3])/32,i=f*4;uv.setXY(i,u0,v0);uv.setXY(i+1,u1,v0);uv.setXY(i+2,u0,v1);uv.setXY(i+3,u1,v1)}
+  uv.needsUpdate=true;return g}
+function build(T,id){
+  id=SK[id]?id:0;var g=new T.Group(),disp=[],tex=new T.CanvasTexture(texCanvas(id));tex.magFilter=tex.minFilter=T.NearestFilter;tex.generateMipmaps=false;disp.push(tex);
+  var mat=new T.MeshLambertMaterial({map:tex});disp.push(mat);
+  function part(pt,w,h,d,px,py,pz,my){var geo=boxGeo(T,w,h,d,pt),m=new T.Mesh(geo,mat),pv=new T.Group();disp.push(geo);pv.position.set(px*U,py*U,pz*U);m.position.set(0,my*U,0);pv.add(m);g.add(pv);return pv}
+  var o={g:g};
+  o.head=part(PT.head,8,8,8,0,24,0,4);
+  var bm=new T.Mesh(boxGeo(T,8,12,4,PT.body),mat);bm.position.set(0,18*U,0);g.add(bm);disp.push(bm.geometry);
+  o.armR=part(PT.arm,4,12,4,6,24,0,-6);o.armL=part(PT.arm,4,12,4,-6,24,0,-6);
+  o.legR=part(PT.leg,4,12,4,2,12,0,-6);o.legL=part(PT.leg,4,12,4,-2,12,0,-6);
+  o.box=function(w,h,d,col,x,y,z,par){var gm=new T.BoxGeometry(w,h,d),mt=new T.MeshLambertMaterial({color:new T.Color(col)}),m=new T.Mesh(gm,mt);m.position.set(x,y,z);(par||g).add(m);disp.push(gm,mt);return m};
+  SK[id].extras(T,o);o.tagY=SK[id].tagY;
+  o.dispose=function(){disp.forEach(function(d){try{d.dispose()}catch(e){}})};
+  return o}
+function flat(id,cv){var t=texCanvas(id),x=cv.getContext('2d'),s=Math.floor(Math.min(cv.width/16,cv.height/34)),ox=Math.floor((cv.width-8*s)/2),R=rc(PT.head),B=rc(PT.body),A=rc(PT.arm),L=rc(PT.leg);
+  x.imageSmoothingEnabled=false;x.clearRect(0,0,cv.width,cv.height);var y=Math.floor((cv.height-32*s)/2);
+  function d(r,dx,dy){x.drawImage(t,r[0],r[1],r[2],r[3],ox+dx*s,y+dy*s,r[2]*s,r[3]*s)}
+  d(R.front,0,0);d(B.front,0,8);d(A.front,-4,8);d(A.front,8,8);d(L.front,0,20);d(L.front,4,20)}
+window.MP_SKINS={list:SK.map(function(s){return{name:s.name,desc:s.desc}}),build:build,flat:flat,count:SK.length};
+})();
+</script>
 <script id="mpMain">
 (function(){
 'use strict';
@@ -1795,7 +1888,7 @@ async function join(v){
     const d={v:1,mods:editsToMods(edits)};
     if(pd){try{Object.assign(d,JSON.parse(pd),{mods:d.mods})}catch(e){}}
     window._mmPend=d;
-    S={id:v.id,meta,known:Object.assign({},edits),av:new Map(),refs:[],t0:Date.now(),live:false,ls:0,lp:null,pr:db.ref('players/'+v.id+'/'+user.uid)};
+    S={id:v.id,meta,known:Object.assign({},edits),av:new Map(),pend:new Map(),refs:[],t0:Date.now(),live:false,ls:0,lp:null,pr:db.ref('players/'+v.id+'/'+user.uid)};
     ['sMulti','mCloud','mAuth','mMpNew','mSettings','mPause'].forEach(id=>UI.close(id));
     document.body.classList.add('ingame','mp');
     $('pNew').style.display='none';
@@ -1806,7 +1899,9 @@ async function join(v){
 function attach(){
   const s=S,id=s.id,P=API().mpP();
   s.pr.onDisconnect().remove();
-  s.pr.set({n:nick,x:P.x,y:P.y,z:P.z,r:P.yaw||0,t:fb.database.ServerValue.TIMESTAMP});
+  {const base={n:nick,x:P.x,y:P.y,z:P.z,r:P.yaw||0,t:fb.database.ServerValue.TIMESTAMP};
+  /* скин и наклон головы — дополнительные поля; если правила БД их не пропускают, пишем без них */
+  s.pr.set(Object.assign({s:SKIN,p:+(P.pit||0).toFixed(2)},base)).catch(()=>{s.noX=1;return s.pr.set(base)}).catch(()=>{})}
   const pl=db.ref('players/'+id);s.refs.push(pl);
   pl.on('child_added',x=>avSet(x.key,x.val(),true));pl.on('child_changed',x=>avSet(x.key,x.val()));pl.on('child_removed',x=>avDel(x.key));
   const bk=db.ref('blocks/'+id);s.refs.push(bk);
@@ -1823,7 +1918,7 @@ async function leave(){
   if(!S)return;const s=S;S=null;
   try{s.refs.forEach(r=>r.off())}catch(e){}
   try{await s.pr.remove()}catch(e){}
-  s.av.forEach(a=>{try{API().mpScene().remove(a.g)}catch(e){}});s.av.clear();
+  s.av.forEach(a=>rmAv(a));s.av.clear();s.pend.clear();
   document.body.classList.remove('mp');$('pNew').style.display='';closeChat();
   $('mpChat').innerHTML=''}
 addEventListener('mm-closed',leave);
@@ -1833,45 +1928,92 @@ function savePD(){
   try{const d=API().snap();if(!d)return;d.mods=[];db.ref('pdata/'+S.id+'/'+user.uid).set(JSON.stringify(d)).catch(()=>{})}catch(e){}}
 setInterval(savePD,20000);addEventListener('pagehide',savePD);document.addEventListener('visibilitychange',()=>{if(document.hidden)savePD()});
 
-/* ---------- другие игроки (3D-аватары) ---------- */
-function mkAv(uid,name){
-  const T=API().mpTHREE(),g=new T.Group();
-  let h=7;for(const c of uid)h=(h*31+c.charCodeAt(0))|0;
-  const col=new T.Color().setHSL(((h>>>0)%360)/360,.55,.5),M=c=>new T.MeshBasicMaterial({color:c});
-  const box=(w,hh,d,c,x,y,z)=>{const m=new T.Mesh(new T.BoxGeometry(w,hh,d),M(c));m.position.set(x,y,z);g.add(m);return m};
-  const l1=box(.22,.7,.24,0x2b3a8a,-.12,.35,0),l2=box(.22,.7,.24,0x2b3a8a,.12,.35,0);
-  box(.5,.72,.28,col,0,1.06,0);box(.16,.7,.2,col,-.33,1.06,0);box(.16,.7,.2,col,.33,1.06,0);
-  box(.46,.46,.46,0xe8b98a,0,1.65,0);
-  box(.08,.08,.02,0x111111,-.1,1.68,-.235);box(.08,.08,.02,0x111111,.1,1.68,-.235);
+/* ---------- скины ---------- */
+const SKN=window.MP_SKINS;
+let SKIN=0;try{const v=parseInt(localStorage.getItem('mmSkin'),10);if(v>=0&&v<SKN.count)SKIN=v}catch(e){}
+function paintSkinBtn(){const b=$('mpSkinBtn');if(b)b.textContent='🎭 Скин: '+SKN.list[SKIN].name}
+paintSkinBtn();
+function setSkin(i){SKIN=i;try{localStorage.setItem('mmSkin',String(i))}catch(e){}paintSkinBtn();
+  if(S&&S.pr&&!S.noX)S.pr.update({s:i}).catch(()=>{});
+  document.querySelectorAll('#skList .sk-card').forEach((c,k)=>c.classList.toggle('on',k===i))}
+
+/* ---------- другие игроки (3D-аватары со скинами и никами) ---------- */
+function mkTag(T,name){
   const cv=document.createElement('canvas');cv.width=256;cv.height=64;const x=cv.getContext('2d');
-  x.font='bold 26px MCF,monospace';x.textAlign='center';x.textBaseline='middle';x.lineWidth=6;x.strokeStyle='#000';x.strokeText(name,128,32);x.fillStyle='#fff';x.fillText(name,128,32);
-  const sp=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv),depthTest:false,transparent:true}));
-  sp.scale.set(1.8,.45,1);sp.position.y=2.3;sp.renderOrder=999;g.add(sp);
-  API().mpScene().add(g);return{g,l1,l2,tx:0,ty:0,tz:0,tr:0,ph:0,name}}
+  let fs=28;x.font='bold '+fs+'px MCF,monospace';while(x.measureText(name).width>224&&fs>12){fs--;x.font='bold '+fs+'px MCF,monospace'}
+  const w=Math.min(252,x.measureText(name).width+24);
+  x.fillStyle='rgba(0,0,0,.5)';x.fillRect(128-w/2,13,w,38);
+  x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=5;x.strokeStyle='#000';x.strokeText(name,128,33);x.fillStyle='#fff';x.fillText(name,128,33);
+  const tx=new T.CanvasTexture(cv);tx.minFilter=T.LinearFilter;tx.generateMipmaps=false;
+  const mt=new T.SpriteMaterial({map:tx,depthTest:false,transparent:true,fog:false}),sp=new T.Sprite(mt);
+  sp.scale.set(1.8,.45,1);sp.renderOrder=999;sp.userData.dis=()=>{tx.dispose();mt.dispose()};return sp}
+function mkAv(uid,name,skin){
+  const T=API().mpTHREE(),m=SKN.build(T,skin),sp=mkTag(T,name);
+  sp.position.y=m.tagY;m.g.add(sp);API().mpScene().add(m.g);
+  return{g:m.g,m,sp,skin,name,tx:0,ty:0,tz:0,tr:0,tp:0,ph:0}}
+function rmAv(a){try{API().mpScene().remove(a.g)}catch(e){}try{a.m.dispose();a.sp.userData.dis()}catch(e){}}
+function avOK(){const A=API();return!!(A&&A.mpTHREE&&A.mpTHREE()&&A.mpScene&&A.mpScene())}
 function avSet(uid,v,isNew){
   if(!S||!v||uid===user.uid)return;
+  if(!(isFinite(v.x)&&isFinite(v.y)&&isFinite(v.z)))return;
+  if(!avOK()){S.pend.set(uid,v);return} /* 3D ещё не готов — повторим в loop() */
+  S.pend.delete(uid);
+  const sk=(v.s|0)>=0&&(v.s|0)<SKN.count?(v.s|0):0,nm=String(v.n||'Игрок').slice(0,20);
   let a=S.av.get(uid);
-  if(!a){a=mkAv(uid,v.n||'Игрок');a.g.position.set(v.x,v.y,v.z);a.g.rotation.y=v.r||0;S.av.set(uid,a);
-    if(Date.now()-S.t0>4000)addChat(null,(v.n||'Игрок')+' зашёл на сервер');updInfo()}
-  a.tx=v.x;a.ty=v.y;a.tz=v.z;a.tr=v.r||0}
+  if(a&&(a.skin!==sk||a.name!==nm)){const o=a;rmAv(o);a=mkAv(uid,nm,sk);a.g.position.copy(o.g.position);a.g.rotation.y=o.g.rotation.y;S.av.set(uid,a)}
+  if(!a){a=mkAv(uid,nm,sk);a.g.position.set(v.x,v.y,v.z);a.g.rotation.y=v.r||0;S.av.set(uid,a);
+    if(Date.now()-S.t0>4000)addChat(null,nm+' зашёл на сервер');updInfo()}
+  a.tx=v.x;a.ty=v.y;a.tz=v.z;a.tr=v.r||0;a.tp=Math.max(-1.3,Math.min(1.3,+v.p||0))}
 function avDel(uid){
-  if(!S)return;const a=S.av.get(uid);if(!a)return;
-  try{API().mpScene().remove(a.g)}catch(e){}S.av.delete(uid);addChat(null,a.name+' вышел');updInfo()}
+  if(!S)return;S.pend.delete(uid);const a=S.av.get(uid);if(!a)return;
+  rmAv(a);S.av.delete(uid);addChat(null,a.name+' вышел');updInfo()}
 function loop(){
   if(!S)return;requestAnimationFrame(loop);
   const A=API();
   if(!S.live&&A.mpReady()){S.live=true}
+  if(S.pend.size&&avOK()){const e=[...S.pend];S.pend.clear();e.forEach(([u,v])=>avSet(u,v))}
   const now=performance.now();
   if(S.live&&A.act()&&now-S.ls>120){
-    const P=A.mpP(),l=S.lp;
-    if(!l||Math.abs(P.x-l.x)>.03||Math.abs(P.y-l.y)>.03||Math.abs(P.z-l.z)>.03||Math.abs((P.yaw||0)-l.r)>.03){
-      S.ls=now;S.lp={x:P.x,y:P.y,z:P.z,r:P.yaw||0};
-      S.pr.update({x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),r:+(P.yaw||0).toFixed(2)}).catch(()=>{})}}
+    const P=A.mpP(),l=S.lp,pt=P.pit||0;
+    if(!l||Math.abs(P.x-l.x)>.03||Math.abs(P.y-l.y)>.03||Math.abs(P.z-l.z)>.03||Math.abs((P.yaw||0)-l.r)>.03||Math.abs(pt-l.p)>.05){
+      S.ls=now;S.lp={x:P.x,y:P.y,z:P.z,r:P.yaw||0,p:pt};
+      const u={x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),r:+(P.yaw||0).toFixed(2)};if(!S.noX)u.p=+pt.toFixed(2);
+      S.pr.update(u).catch(()=>{S.noX=1})}}
   S.av.forEach(a=>{
-    const g=a.g,dx=a.tx-g.position.x,dz=a.tz-g.position.z;
+    const g=a.g,m=a.m,dx=a.tx-g.position.x,dz=a.tz-g.position.z;
     g.position.x+=dx*.25;g.position.y+=(a.ty-g.position.y)*.25;g.position.z+=dz*.25;
     let dr=a.tr-g.rotation.y;dr=Math.atan2(Math.sin(dr),Math.cos(dr));g.rotation.y+=dr*.3;
-    const sp=Math.min(1,Math.hypot(dx,dz)*6);a.ph+=sp*.5;const sw=Math.sin(a.ph)*.7*sp;a.l1.rotation.x=sw;a.l2.rotation.x=-sw})}
+    const sp=Math.min(1,Math.hypot(dx,dz)*6);a.ph+=sp*.5;const sw=Math.sin(a.ph)*.7*sp;
+    m.legL.rotation.x=sw;m.legR.rotation.x=-sw;m.armL.rotation.x=-sw*.8;m.armR.rotation.x=sw*.8;
+    m.head.rotation.x+=(a.tp-m.head.rotation.x)*.3})}
+
+/* ---------- окно выбора скина (вращающиеся 3D-превью) ---------- */
+let pv=null,skFromPause=false;
+function pvStart(){
+  if(pv)return;const cards=[...document.querySelectorAll('#skList .sk-card canvas')];
+  try{
+    const T=window.THREE,cv=document.createElement('canvas');cv.width=160;cv.height=220;
+    const r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true});r.setSize(160,220,false);r.setClearColor(0x000000,0);
+    const sc=new T.Scene();sc.add(new T.AmbientLight(0xffffff,.62));const dl=new T.DirectionalLight(0xffffff,.45);dl.position.set(.6,1,1);sc.add(dl);
+    const cam=new T.PerspectiveCamera(32,160/220,.1,30);cam.position.set(0,1.2,5.6);cam.lookAt(0,1.05,0);
+    const models=[];for(let i=0;i<SKN.count;i++){const m=SKN.build(T,i);m.g.visible=false;sc.add(m.g);models.push(m)}
+    pv={r,models,raf:0,last:0,t0:performance.now()};
+    const fr=()=>{if(!pv)return;pv.raf=requestAnimationFrame(fr);const n=performance.now();if(n-pv.last<33)return;pv.last=n;
+      const ang=Math.PI+(n-pv.t0)/1000*.9;
+      models.forEach((m,i)=>{models.forEach((o,j)=>o.g.visible=j===i);m.g.rotation.y=ang;m.armL.rotation.x=Math.sin(ang*3)*.12;m.armR.rotation.x=-Math.sin(ang*3)*.12;
+        r.render(sc,cam);const c2=cards[i].getContext('2d');c2.clearRect(0,0,160,220);c2.drawImage(cv,0,0)})};
+    fr()
+  }catch(e){pv=null;cards.forEach((c,i)=>{try{SKN.flat(i,c)}catch(_){}})}}
+function pvStop(){if(!pv)return;cancelAnimationFrame(pv.raf);try{pv.models.forEach(m=>m.dispose());pv.r.dispose();pv.r.forceContextLoss&&pv.r.forceContextLoss()}catch(e){}pv=null}
+function buildSkinList(){
+  const box=$('skList');if(box.children.length)return;
+  SKN.list.forEach((s,i)=>{const c=document.createElement('div');c.className='sk-card';c.innerHTML='<canvas width="160" height="220"></canvas><b></b><small></small><i>✔ Выбран</i>';
+    c.querySelector('b').textContent=s.name;c.querySelector('small').textContent=s.desc;c.onclick=()=>setSkin(i);box.appendChild(c)})}
+function openSkin(fromPause){buildSkinList();skFromPause=!!fromPause;setSkin(SKIN);UI.open('mSkin');pvStart()}
+new MutationObserver(()=>{if($('mSkin').classList.contains('open'))return;pvStop();
+  if(skFromPause){skFromPause=false;if(S&&document.body.classList.contains('ingame'))UI.open('mPause')}}).observe($('mSkin'),{attributes:true,attributeFilter:['class']});
+$('mpSkinBtn').onclick=()=>openSkin(false);
+$('pSkin').onclick=()=>{UI.close('mPause');openSkin(true)};
 
 /* ---------- чат ---------- */
 function addChat(n,t){
