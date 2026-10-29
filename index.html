@@ -225,6 +225,10 @@ body.ar #arHud{display:block}
 #arBan .sub{font-size:clamp(9px,2vw,14px);color:#e8d8ff;text-shadow:2px 2px 0 #1a1033;letter-spacing:.15em}
 #arFlash{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,200,80,.85),rgba(255,60,0,.35) 60%,transparent 80%);opacity:0;pointer-events:none}
 #arWv{border-color:#ffb02a!important}
+#arX{width:auto!important;padding:0 14px!important;border-radius:21px!important;font-size:13px!important;background-image:none!important;background-color:#d12a1a!important;color:#fff!important}
+#arX:after{display:none!important}
+#arStare{position:absolute;left:50%;top:calc(50% + 30px);transform:translateX(-50%);width:130px;height:9px;border:2px solid #000;background:#220a2a;display:none}
+#arStare i{display:block;height:100%;width:0;background:#e060ff}
 #arHPw{width:min(40vw,240px)!important;height:28px!important}
 #arHPt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;text-shadow:2px 2px 0 #000}
 #arBoss{position:absolute;left:50%;top:max(60px,calc(env(safe-area-inset-top) + 54px));transform:translateX(-50%);width:min(66vw,480px);display:none;text-align:center}
@@ -512,10 +516,10 @@ html,body{height:100dvh}
 </div></div>
 <canvas id="arCv"></canvas>
 <div id="arHud">
-  <div id="arHurt"></div><div id="arFlash"></div><div id="arCross"></div><div id="arBan"><div class="lv"></div><div class="bg"></div><div class="sub"></div></div>
-  <div id="arTop"><div id="arHPw"><div id="arHPf"></div><div id="arHPt"></div></div><div class="ar-p" id="arCo"></div><div class="ar-p" id="arWv"></div><span style="flex:1"></span><button class="ar-b" id="arShopH" title="Магазин (B)">🛒</button><button class="ar-b" id="arX" title="Выйти в меню">✕</button></div>
+  <div id="arHurt"></div><div id="arFlash"></div><div id="arCross"></div><div id="arStare"><i></i></div><div id="arBan"><div class="lv"></div><div class="bg"></div><div class="sub"></div></div>
+  <div id="arTop"><div id="arHPw"><div id="arHPf"></div><div id="arHPt"></div></div><div class="ar-p" id="arCo"></div><div class="ar-p" id="arWv"></div><span style="flex:1"></span><button class="ar-b" id="arShopH" title="Магазин (B)">🛒</button><button class="ar-b" id="arX" title="Выйти из испытания">🚪 Выход</button></div>
   <div id="arBoss"><div class="nm" id="arBN"></div><div id="arBW"><div id="arBF"></div><div id="arBT"></div></div></div><div id="arFeed"></div><div id="arSb"></div><div id="arHot"></div>
-  <div id="arDead"><div>💀 Ты погиб</div><div id="arDT" style="font-size:11px"></div><button class="mcb pri" id="arResp" style="width:min(70vw,300px)">Возродиться</button></div>
+  <div id="arDead"><div>💀 Ты погиб</div><div id="arDT" style="font-size:11px"></div><button class="mcb pri" id="arResp" style="width:min(70vw,300px)">Возродиться</button><button class="mcb" id="arExit2" style="width:min(70vw,300px)">🚪 Выйти в меню</button></div>
   <div id="arTouch"><div id="arJoy"><div id="arKn"></div></div><div class="ar-bt" id="arAtk">⚔</div><div class="ar-bt" id="arJmp">⬆</div></div>
 </div>
 <div id="mpToast"></div>
@@ -2368,7 +2372,7 @@ function say(t,c){const g=$('arBan').querySelector('.bg');g.textContent=t;g.clas
 function flash(){const f=$('arFlash'),c=$('arCv');f.style.transition='none';f.style.opacity=1;requestAnimationFrame(()=>{f.style.transition='opacity .7s';f.style.opacity=0});c.style.animation='none';void c.offsetWidth;c.style.animation='arShake .45s'}
 function clearIntro(){tmo.forEach(clearTimeout);tmo=[];const b=$('arBan');if(b)b.style.display='none'}
 function intro(w){if(!R)return;const f=theme(w),b=$('arBan'),t=kind(w),st=mst(t,w);clearIntro();b.style.display='flex';b.querySelector('.lv').textContent='УРОВЕНЬ '+w+' · '+f.n.toUpperCase();
-  b.querySelector('.sub').textContent='Враг: '+MD[t].n+'  ·  ❤ '+st.hp+'  ·  урон '+st.d;b.querySelector('.bg').textContent='';
+  b.querySelector('.sub').textContent='Враг: '+MD[t].n+'  ·  ❤ '+st.hp+'  ·  урон '+st.d+(t===7?'  ·  не смотри ему в голову 5 сек!':'');b.querySelector('.bg').textContent='';
   [['One',0,440],['Two',900,520],['Three',1800,620]].forEach(a=>tmo.push(setTimeout(()=>{say(a[0]);beep(a[2],.25)},a[1])));
   tmo.push(setTimeout(()=>{say('FIGHT!',' f');beep(880,.5,.09);beep(440,.6,.07);flash()},2700));
   tmo.push(setTimeout(()=>{b.style.display='none'},3900))}
@@ -2425,6 +2429,11 @@ function mobHit(id,d,by,ax,az){const m=R.mobs.get(id);if(!m)return;m.hp-=d;m.fl=
   if(m.hp<=0){R.mobs.delete(id);rmMob(m);emit('mk',{by,c:mst(m.t,R.W.w).r})}}
 function dmgP(id,d,fn,x,z){if(id===R.me)hurt(d,fn,'m',x,z);else DB('arena/'+R.id+'/h/'+id).push({f:'m',fn,d,x,z}).catch(()=>{})}
 function explode(m,S){R.mobs.delete(m.id);rmMob(m);emit('ex',{x:m.x,z:m.z,d:S.d,r:S.er||4.5})}
+function stare(dt){const bar=$('arStare');let on=null;R.mobs.forEach(m=>{if(m.t===7&&!m.agro)on=on||m});
+  if(!on||R.dead){R.st=0;bar.style.display='none';return}
+  const fx=-Math.sin(R.ya)*Math.cos(R.pit),fy=Math.sin(R.pit),fz=-Math.cos(R.ya)*Math.cos(R.pit),dx=on.x-R.x,dy=2.45*on.sz-(R.y+1.62),dz=on.z-R.z,d=Math.hypot(dx,dy,dz)||1,cs=(fx*dx+fy*dy+fz*dz)/d,thr=Math.atan2(.38*on.sz,d)+.045;
+  if(Math.acos(Math.max(-1,Math.min(1,cs)))<thr&&d<45){R.st=(R.st||0)+dt;bar.style.display='block';bar.firstChild.style.width=Math.min(100,R.st/5*100)+'%';if(R.st>=5){R.st=0;bar.style.display='none';on.agro=true;emit('ag',{id:on.id})}}
+  else{R.st=Math.max(0,(R.st||0)-dt*2);if(R.st>0){bar.firstChild.style.width=Math.min(100,R.st/5*100)+'%'}else bar.style.display='none'}}
 function simMobs(dt){const W=R.W;
   if(W.st==='run'){W.sp-=dt;if(W.q>0&&W.sp<=0){W.sp=.45;spawnMob();W.q--}else if(W.q<=0&&R.mobs.size===0){W.st='rest';W.rest=5;emit('wv',{w:W.w})}}
   else if(W.st==='cd'){W.cdT-=dt;if(W.cdT<=0){W.st='run';W.q=qn(W.w);W.sp=0}}
@@ -2434,6 +2443,7 @@ function simMobs(dt){const W=R.W;
     if(n){const a=Math.atan2(n.x-m.x,n.z-m.z),sp=S.sp;let mv=0,sx=0;m.rot=a;
       if(S.a){mv=bd>9?1:bd<5?-.8:0;sx=bd>=5&&bd<=9?Math.sin(performance.now()/900+m.id)*.6:0;if(bd<16&&m.cd<=0){m.cd=Math.max(S.wa?.7:.9,(S.wa?1.5:2.3)-.08*L);emit('ar',{x:m.x,z:m.z,tx:n.x,tz:n.z,to:n.id,d:S.d})}}
       else if(S.cr){if(m.fuse>0){mv=0;m.fuse-=dt;if(bd>S.ft*2.4)m.fuse=0;else if(m.fuse<=0){explode(m,S);return}}else{mv=bd>S.ft-.3?1:0;if(bd<=S.ft)m.fuse=1.1}}
+      else if(S.tp&&!m.agro){mv=0}
       else{if(S.tp){m.tpc-=dt;if(m.tpc<=0&&bd>3.5){m.tpc=rnd(2.2,4);emit('tp',{x:m.x,z:m.z});const a2=rnd(0,2*PI);m.x=n.x+Math.cos(a2)*2;m.z=n.z+Math.sin(a2)*2;bound(m);m.tx=m.x;m.tz=m.z;emit('tp',{x:m.x,z:m.z})}}mv=bd>rg-.4?1:0;if(bd<rg&&m.cd<=0){m.cd=Math.max(.6,1.1-.03*L);dmgP(n.id,S.d,MN,m.x,m.z)}}
       m.x+=(Math.sin(a)*mv*sp+Math.cos(a)*sx*sp+m.kx)*dt;m.z+=(Math.cos(a)*mv*sp-Math.sin(a)*sx*sp+m.kz)*dt}
     else{m.x+=m.kx*dt;m.z+=m.kz*dt}
@@ -2450,6 +2460,7 @@ function onEv(e){if(!R)return;
   else if(e.t==='ws')intro(e.w);
   else if(e.t==='wv'){feed('✔ Уровень '+e.w+' пройден!');if(!R.dead)gain(25+e.w*8)}
   else if(e.t==='ex'){boom(e);feed('💥 Взрыв!');const dx=R.x-e.x,dz=R.z-e.z,ds=Math.hypot(dx,dz),rr=e.r||4.5;if(!R.dead&&ds<rr)hurt(Math.max(1,Math.round(e.d*(1-ds/rr))),'Крипер','m',e.x,e.z)}
+  else if(e.t==='ag'){const m=R.mobs.get(e.id);if(m){m.agro=true;feed('👁 Эндермен разозлился!');boom({x:m.x,z:m.z,c:0xff40ff,s:.5})}}
   else if(e.t==='tp')boom({x:e.x,z:e.z,c:0xaa44ff,s:.35})
   else if(e.t==='d'){feed('💀 '+e.n+(e.by!=='m'?' ⚔ '+e.bn:' ← '+e.bn));if(e.by===R.me&&e.v!==R.me){R.kills++;gain(60)}}
   else if(e.t==='ar')arrow(e)}
@@ -2482,7 +2493,7 @@ function avDel(u){const a=R&&R.av.get(u);if(!a)return;sc.remove(a.g);try{a.m.dis
 function loop(t){if(!R)return;R.raf=requestAnimationFrame(loop);const dt=Math.min(.05,R.l?(t-R.l)/1000:0);R.l=t;
   const ids=[R.me,...R.av.keys()].sort();R.host=R.solo||ids[0]===R.me;
   if(R.host&&!R.wasHost){R.wasHost=true;let mx=0;R.mobs.forEach(m=>mx=Math.max(mx,m.id));R.nid=Math.max(R.nid,mx+1);R.W.sp=0;if(R.W.w>0)R.W.rest=Math.max(R.W.rest||0,3)}if(!R.host)R.wasHost=false;
-  step(dt);if(R.host)simMobs(dt);tick(t,dt);
+  step(dt);if(R.host)simMobs(dt);tick(t,dt);stare(dt);
   R.mobs.forEach(m=>{const g=m.v.g,px=g.position.x,pz=g.position.z;if(!R.host){const k=Math.min(1,dt*12);m.x+=(m.tx-m.x)*k;m.z+=(m.tz-m.z)*k}
     g.position.set(m.x,0,m.z);let d=m.rot-g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));g.rotation.y+=d*Math.min(1,dt*10);
     const sp=Math.hypot(m.x-px,m.z-pz)/Math.max(dt,.001);m.ph+=sp*dt*2.2;const s=Math.sin(m.ph)*Math.min(1,sp/2)*.8;m.v.legL.rotation.x=s;m.v.legR.rotation.x=-s;
@@ -2539,7 +2550,7 @@ async function create(){if(R)return;if(!fbOK()||!cu()){toast('Нужно вой�
 async function quick(){if(!fbOK()||!cu()){toast('Нужно войти в аккаунт (или выбери «Соло»)');return}await rooms();const p=RL.filter(r=>(r.on||0)<(r.max||8)).sort((a,b)=>(b.on||0)-(a.on||0))[0];p?join(p):create()}
 $('mpArena').onclick=async()=>{UI.close('sMulti');UI.open('sArena');await getNick();rooms()};
 $('arBack').onclick=()=>{UI.close('sArena');UI.open('sMulti')};$('arJoin').onclick=()=>{const r=RL.find(x=>x.id===ASEL);if(r)join(r)};
-$('arNew').onclick=create;$('arQuick').onclick=quick;$('arSolo').onclick=()=>enter(null);$('arShopB').onclick=openShop;$('arShopH').onclick=openShop;$('arX').onclick=leave;$('arResp').onclick=()=>{if(R&&R.dead&&R.deadT<=0)respawn()};
+$('arNew').onclick=create;$('arQuick').onclick=quick;$('arSolo').onclick=()=>enter(null);$('arShopB').onclick=openShop;$('arShopH').onclick=openShop;$('arX').onclick=()=>{if(confirm('Выйти из Warfare Tower?'))leave()};$('arExit2').onclick=leave;$('arResp').onclick=()=>{if(R&&R.dead&&R.deadT<=0)respawn()};
 /* ---------- управление ---------- */
 const cv=$('arCv');
 addEventListener('keydown',e=>{if(!R||UI.any())return;K[e.code]=true;if(e.code==='KeyB'){e.preventDefault();openShop()}
