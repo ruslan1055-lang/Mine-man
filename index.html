@@ -2246,10 +2246,12 @@ const MD=[
 {n:'Супер Крипер',b:{hp:70,d:12,sp:2.6,r:50,cr:1,ft:3.4,er:7},h:1.9,s:1.7},
 {n:'Пиглин',b:{hp:68,d:8,sp:3.1,r:45},h:2.2,s:1.1},
 {n:'Эндермен',b:{hp:88,d:10,sp:3.0,r:70,tp:1},h:3.3,s:1},
-{n:'Визер Скелет',b:{hp:84,d:9,sp:2.2,r:90,a:1,wa:1},h:2.8,s:1.12}];
+{n:'Визер Скелет',b:{hp:84,d:9,sp:2.2,r:90,a:1,wa:1},h:2.8,s:1.12},
+{n:'Эндер-зомби',b:{hp:78,d:9,sp:2.9,r:80,tp:1,ez:1},h:2.3,s:1.1},
+{n:'Йети',b:{hp:130,d:12,sp:2.3,r:110},h:3.0,s:1.3}];
 const kind=w=>(w-1)%MD.length;
 /* с каждым уровнем враг сильнее: +28% хп, +18% урона, быстрее, больше */
-function mst(t,w){const b=MD[t].b,f=w-1;return{hp:Math.round(b.hp*(1+.28*f)),d:Math.round(Math.min(b.cr?19:999,b.d*(1+.18*f))),sp:Math.min(b.sp*1.7,b.sp*(1+.03*f)),r:Math.round(b.r*(1+.15*f)),a:b.a,cr:b.cr,wa:b.wa,tp:b.tp,ft:b.ft||2.5,er:b.er}}
+function mst(t,w){const b=MD[t].b,f=w-1;return{hp:Math.round(b.hp*(1+.28*f)),d:Math.round(Math.min(b.cr?19:999,b.d*(1+.18*f))),sp:Math.min(b.sp*1.7,b.sp*(1+.03*f)),r:Math.round(b.r*(1+.15*f)),a:b.a,cr:b.cr,wa:b.wa,tp:b.tp,ez:b.ez,ft:b.ft||2.5,er:b.er}}
 const qn=()=>1;
 const PIL=[[-9,-9],[9,-9],[-9,9],[9,9],[0,0]];
 const FL=[
@@ -2258,7 +2260,10 @@ const FL=[
 {n:'Огненные недра',bg:0x2a0808,t:0xff9a80,tc:0xff4a10,w:0x4a2a2a,w2:0x5a3030,pc:0x4a3030,fn:28,ff:95,pt:{c:0xff7a20,vy:2.4,dx:.6,s:3}},
 {n:'Тёмный шпиль',bg:0x08060c,t:0x9a8ab0,tc:0xaa44ff,w:0x2a2438,w2:0x38304a,pc:0x3a2a4a,fn:16,ff:70,pt:{c:0xb36bff,vy:.6,dx:.4,s:3}},
 {n:'Золотой чертог',bg:0x2a2008,t:0xffe08a,tc:0xffd040,w:0x6a5a2a,w2:0x8a7434,pc:0xd4a82a,fn:34,ff:110,pt:{c:0xffe066,vy:.9,dx:.3,s:3}},
-{n:'Край бездны',bg:0x120a28,t:0xd0a0ff,tc:0xff40ff,w:0x2a2a5a,w2:0x38387a,pc:0x5a4a8a,fn:30,ff:130,pt:{c:0xff7aff,vy:1.6,dx:.5,s:3}}];
+{n:'Край бездны',bg:0x120a28,t:0xd0a0ff,tc:0xff40ff,w:0x2a2a5a,w2:0x38387a,pc:0x5a4a8a,fn:30,ff:130,pt:{c:0xff7aff,vy:1.6,dx:.5,s:3}},
+{n:'Ядовитое болото',bg:0x0c1a0e,t:0x9acc7a,tc:0x88ff44,w:0x2e3a28,w2:0x3c4a32,pc:0x4a5a3a,fn:22,ff:85,pt:{c:0xc8ff60,vy:.5,dx:.7,s:3}},
+{n:'Пустынный храм',bg:0xcfae6a,t:0xffd890,tc:0xffa040,w:0x9a7a44,w2:0xb8944e,pc:0xc4a25a,fn:40,ff:125,pt:{c:0xf0d8a0,vy:-.3,dx:1.2,s:3}},
+{n:'Морской храм',bg:0x062a3a,t:0x7ae0d0,tc:0x40ffe0,w:0x1e5a5a,w2:0x2a7470,pc:0x3a8a84,fn:20,ff:80,pt:{c:0xbff8ff,vy:1.8,dx:.4,s:3}}];
 let TL=[],FLM=[],FLOOR=null,RING=null,tmo=[],WALLM=[],PM=null,DEC=[],ANIM=[],CUR=0,PART=null,PD=null;
 let PR={c:0,o:[0],e:0},nick='Игрок',R=null,ren=null,sc,cam,fsw,RL=[],ASEL=null,SKIN=0;
 try{const p=JSON.parse(localStorage.getItem('mmArena')||'null');if(p&&Array.isArray(p.o))PR=Object.assign(PR,p)}catch(e){}
@@ -2320,7 +2325,31 @@ function buildDecor(){const T=THREE,PI2=PI*2,R2=(a,b)=>a+Math.random()*(b-a);
     for(let i=0;i<7;i++){const a=i/7*PI2+R2(-.3,.3),r=R2(42,70),w=R2(3,5),h=R2(4,7),y=R2(-4,16),q=new T.Group();const c=Cn(q,w,h,es,0,0,0,6);c.rotation.x=PI;Cy(q,w,w,.8,es,0,h/2+.4,0,6);q.position.set(Math.cos(a)*r,y,Math.sin(a)*r);q.userData.y=y;g.add(q);is.push(q)}
     const cr=[];[[-17,-17],[17,-17],[-17,17],[17,17]].forEach(c=>{Cy(g,.8,1,3,ob,c[0],1.5,c[1],6);const q=new T.Mesh(new T.OctahedronGeometry(.7),M(0xff40ff,{emissive:0x8a1a8a}));q.position.set(c[0],4.3,c[1]);q.scale.y=1.4;g.add(q);cr.push(q)});
     const pt=new T.Mesh(new T.TorusGeometry(14,.9,8,40),bas(0xaa44ff,{fog:false})),pd=new T.Mesh(new T.CircleGeometry(13.2,40),bas(0x5a1a9a,{fog:false,transparent:true,opacity:.5,side:T.DoubleSide}));pt.position.set(0,28,-85);pd.position.copy(pt.position);g.add(pt,pd);
-    ANIM.push({f:5,fn:t=>{cm.color.setHSL(.8+.03*Math.sin(t/300),1,.5+.12*Math.sin(t/350));is.forEach((q,i)=>{q.position.y=q.userData.y+Math.sin(t/1200+i)*.9});cr.forEach((q,i)=>{q.rotation.y=t/500+i;q.position.y=4.3+Math.sin(t/500+i)*.25});pt.rotation.z=t/4000}})}}
+    ANIM.push({f:5,fn:t=>{cm.color.setHSL(.8+.03*Math.sin(t/300),1,.5+.12*Math.sin(t/350));is.forEach((q,i)=>{q.position.y=q.userData.y+Math.sin(t/1200+i)*.9});cr.forEach((q,i)=>{q.rotation.y=t/500+i;q.position.y=4.3+Math.sin(t/500+i)*.25});pt.rotation.z=t/4000}})}
+  /* 6 — Ядовитое болото: лужи, кувшинки, грибы, мёртвые деревья */
+  {const g=G(6),wt=M(0x2f6a2a,{transparent:true,opacity:.7,emissive:0x0a2a08}),lp=M(0x3aa03a),tr=M(0x3a2a1a),mh=M(0xe04040,{emissive:0x401010}),mh2=M(0xb0e060,{emissive:0x4a6a10}),st=M(0xe8e0c8),gl=[];
+    for(let i=0;i<8;i++){const x=R2(-17,17),z=R2(-17,17),r=R2(1.8,3.4);Cy(g,r,r,.05,wt,x,.04,z,16);for(let k=0;k<3;k++)Cy(g,.35,.35,.04,lp,x+R2(-r*.6,r*.6),.08,z+R2(-r*.6,r*.6),8)}
+    for(let i=0;i<14;i++){const p=wallPos(),h=R2(.5,1.1),c=i%3?mh:mh2;Cy(g,.1,.14,h,st,p[0],h/2,p[1],6);const q=Cy(g,.1,.55,.3,c,p[0],h+.1,p[1],8);gl.push(c)}
+    for(let i=0;i<7;i++){const p=wallPos(),h=R2(3,5);Cy(g,.18,.32,h,tr,p[0],h/2,p[1],6);for(let k=0;k<3;k++){const l=R2(1,1.9),a=R2(0,PI2),q=B(g,l,.14,.14,tr,p[0]+Math.cos(a)*l*.4,h*R2(.55,.95),p[1]+Math.sin(a)*l*.4,-a);q.rotation.z=R2(.2,.7)}}
+    ANIM.push({f:6,fn:t=>{mh.emissive.setHSL(0,.7,.1+.06*Math.sin(t/400));mh2.emissive.setHSL(.22,.8,.14+.08*Math.sin(t/330));wt.opacity=.62+.1*Math.sin(t/700)}})}
+  /* 7 — Пустынный храм: дюны, кактусы, песчаник, пирамида и солнце */
+  {const g=G(7),sd=M(0xe6c27a),sd2=M(0xcfa85e),ss=M(0xd8b46a),gd=M(0xf7d83a,{emissive:0x4a3000}),ca=M(0x3a8a3a);
+    for(let i=0;i<10;i++){const p=wallPos(),w=R2(3,6);B(g,w,R2(.4,.9),R2(2,4),i%2?sd:sd2,p[0],.2,p[1],R2(0,PI))}
+    for(let i=0;i<8;i++){const p=wallPos(),h=R2(1.6,3);Cy(g,.28,.3,h,ca,p[0],h/2,p[1],8);if(Math.random()<.8){B(g,.7,.22,.22,ca,p[0]+.5,h*.55,p[1]);B(g,.22,.7,.22,ca,p[0]+.85,h*.55+.3,p[1])}if(Math.random()<.6){B(g,.7,.22,.22,ca,p[0]-.5,h*.4,p[1]);B(g,.22,.6,.22,ca,p[0]-.85,h*.4+.25,p[1])}}
+    [[-17,-17],[17,-17],[-17,17],[17,17]].forEach(c=>{B(g,2,.5,2,ss,c[0],.25,c[1]);B(g,1.5,2.6,1.5,ss,c[0],1.8,c[1]);B(g,1.8,.35,1.8,gd,c[0],3.25,c[1])});
+    for(let i=-4;i<=4;i++){B(g,.5,.03,1.1,M(0x8a5a1a),i*3.6,.03,-8.5);B(g,.5,.03,1.1,M(0x8a5a1a),i*3.6,.03,8.5)}
+    const py=Cn(g,48,40,M(0xd8b060),0,19,-110,4);py.rotation.y=PI/4;const py2=Cn(g,30,26,M(0xc8a050),-70,12,-95,4);py2.rotation.y=PI/4;
+    const sun=new T.Mesh(new T.CircleGeometry(9,24),bas(0xfff0a0,{fog:false}));sun.position.set(40,48,-120);sun.lookAt(0,10,0);g.add(sun);
+    ANIM.push({f:7,fn:t=>{sun.scale.setScalar(1+.04*Math.sin(t/800))}})}
+  /* 8 — Морской храм: призмарин, морские фонари, водоросли, рыбки */
+  {const g=G(8),pr=M(0x4ab0a0,{emissive:0x0a3a34}),pd=M(0x2a6a66),sl=bas(0xd8fff4),cs=[],ks=[],fs=[],kl=M(0x2aa04a);
+    [[-17,-17],[17,-17],[-17,17],[17,17]].forEach(c=>{B(g,1.6,.5,1.6,pd,c[0],.25,c[1]);B(g,1.1,3,1.1,pr,c[0],2,c[1]);B(g,1.5,.4,1.5,pr,c[0],3.7,c[1]);B(g,.7,.7,.7,sl,c[0],4.2,c[1])});
+    const cm=[0xff6a8a,0xffa040,0xc060ff,0xff5050];for(let i=0;i<14;i++){const p=wallPos(),m=M(cm[i%4],{emissive:0x200808}),h=R2(.7,1.6);for(let k=0;k<3;k++)Cn(g,R2(.18,.3),h*R2(.6,1),m,p[0]+R2(-.5,.5),h/2,p[1]+R2(-.5,.5),5)}
+    for(let i=0;i<16;i++){const p=wallPos(),h=R2(2,4.2),q=B(g,.14,h,.14,kl,p[0],h/2,p[1]);q.userData.p=i;ks.push(q)}
+    for(let i=0;i<7;i++){const q=B(g,R2(2.5,4.5),.02,R2(2.5,4.5),bas(0xaaffff,{transparent:true,opacity:.18}),R2(-17,17),.035,R2(-17,17),R2(0,PI));cs.push(q)}
+    for(let i=0;i<9;i++){const f=new T.Group();B(f,.5,.22,.14,bas(i%2?0xffa040:0x40c0ff),0,0,0);B(f,.2,.2,.05,bas(i%2?0xff7a20:0x2080ff),-.32,0,0);f.userData={r:R2(8,17),y:R2(2.5,7),s:R2(.5,1.1)*(Math.random()<.5?-1:1),a:R2(0,PI2)};g.add(f);fs.push(f)}
+    ANIM.push({f:8,fn:t=>{ks.forEach(q=>{q.rotation.z=Math.sin(t/700+q.userData.p)*.12});cs.forEach((q,i)=>{q.material.opacity=.12+.1*Math.sin(t/500+i*1.7)});fs.forEach(f=>{const u=f.userData,a=u.a+t/1000*u.s;f.position.set(Math.cos(a)*u.r,u.y+Math.sin(t/600+u.a)*.4,Math.sin(a)*u.r);f.rotation.y=-a+(u.s>0?0:PI)})}})}
+}
 function tick(t,dt){ANIM.forEach(a=>{if(a.f===CUR)a.fn(t,dt)});if(PART&&PART.visible){const p=PD.a,vy=PD.vy,dx=PD.dx;for(let i=0;i<PD.n;i++){const k=i*3;p[k+1]+=vy*dt;p[k]+=Math.sin(t/900+i)*dx*dt;p[k+2]+=Math.cos(t/1100+i*1.7)*dx*dt;if(p[k+1]>15)p[k+1]=.1;else if(p[k+1]<0)p[k+1]=15}PART.geometry.attributes.position.needsUpdate=true}}
 function setup(){if(ren)return;const T=THREE;ren=new T.WebGLRenderer({canvas:$('arCv'),antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio||1,2));
   sc=new T.Scene();sc.background=new T.Color(0x1b1226);sc.fog=new T.Fog(0x1b1226,34,110);cam=new T.PerspectiveCamera(75,1,.05,300);cam.rotation.order='YXZ';sc.add(cam);
@@ -2413,6 +2442,14 @@ function mkMob(t,k,lv){const T=THREE,g=new T.Group(),mats=[];
   else if(t===7){o=H({hc:'#121214',tc:'#121214',ac:'#121214',lc:'#121214',th:.14,lh:1.45,al:1.35,ar:0,tw:.4,tt:.22});const hd=o.head;
     gl(.15,.05,.03,'#e060ff',.12,.28,.26,hd);gl(.15,.05,.03,'#e060ff',-.12,.28,.26,hd);b(.2,.03,.03,'#2a0a2a',0,.12,.26,hd);
     for(let i=0;i<5;i++)gl(.07,.07,.07,'#b05cff',rnd(-.6,.6),rnd(.3,3),rnd(-.4,.4))}
+  else if(t===9){o=H({hc:'#1f5a58',tc:'#2a2a48',ac:'#1f5a58',lc:'#1a1a34',hs:.52});const hd=o.head;
+    gl(.13,.07,.03,'#e060ff',.12,.3,.27,hd);gl(.13,.07,.03,'#e060ff',-.12,.3,.27,hd);b(.22,.04,.03,'#0a1a1a',0,.12,.27,hd);b(.5,.08,.27,'#14143a',0,1.0,0);b(.1,.2,.1,'#14143a',.3,.45,0,hd);
+    for(let i=0;i<5;i++)gl(.07,.07,.07,'#b05cff',rnd(-.5,.5),rnd(.3,2.1),rnd(-.4,.4))}
+  else if(t===10){o=H({hc:'#f2f6fa',tc:'#e6eef6',ac:'#dde8f2',lc:'#c9d8e6',th:.32,al:1.05,lh:.9,hs:.64,tw:.78,tt:.42,ar:-.7});const hd=o.head;
+    b(.38,.3,.06,'#8db8d8',0,.28,.33,hd);gl(.1,.08,.03,'#1a3a6a',.13,.36,.355,hd);gl(.1,.08,.03,'#1a3a6a',-.13,.36,.355,hd);b(.26,.07,.03,'#3a1a1a',0,.14,.36,hd);b(.04,.08,.03,'#ffffff',-.08,.09,.375,hd);b(.04,.08,.03,'#ffffff',.08,.09,.375,hd);
+    b(.18,.16,.18,'#cfdceb',.3,.62,0,hd);b(.18,.16,.18,'#cfdceb',-.3,.62,0,hd);b(.5,.2,.5,'#ffffff',0,.62,-.05,hd);
+    for(let i=0;i<6;i++)b(.22,.14,.22,'#ffffff',rnd(-.4,.4),rnd(.5,1.5),rnd(-.25,.3));
+    b(.8,.14,.46,'#b8cbe0',0,.95,0);b(.34,.2,.34,'#c9dcef',-.45,.18,0,o.armL);b(.34,.2,.34,'#c9dcef',.45,.18,0,o.armR)}
   else{o=H({hc:'#1e1e22',tc:'#2a2a30',ac:'#222226',lc:'#1a1a1e',th:.18,lh:1.0,hs:.52});const hd=o.head;
     gl(.1,.1,.03,'#ff3a2a',.12,.28,.27,hd);gl(.1,.1,.03,'#ff3a2a',-.12,.28,.27,hd);b(.2,.05,.03,'#0a0a0a',0,.12,.27,hd);
     [1.15,1.3,1.45].forEach(y=>b(.52,.05,.27,'#46464e',0,y,0));sw(o.armR,6,.055)}
@@ -2443,7 +2480,7 @@ function simMobs(dt){const W=R.W;
     if(n){const a=Math.atan2(n.x-m.x,n.z-m.z),sp=S.sp;let mv=0,sx=0;m.rot=a;
       if(S.a){mv=bd>9?1:bd<5?-.8:0;sx=bd>=5&&bd<=9?Math.sin(performance.now()/900+m.id)*.6:0;if(bd<16&&m.cd<=0){m.cd=Math.max(S.wa?.7:.9,(S.wa?1.5:2.3)-.08*L);emit('ar',{x:m.x,z:m.z,tx:n.x,tz:n.z,to:n.id,d:S.d})}}
       else if(S.cr){if(m.fuse>0){mv=0;m.fuse-=dt;if(bd>S.ft*2.4)m.fuse=0;else if(m.fuse<=0){explode(m,S);return}}else{mv=bd>S.ft-.3?1:0;if(bd<=S.ft)m.fuse=1.1}}
-      else if(S.tp&&!m.agro){mv=0}
+      else if(S.tp&&!S.ez&&!m.agro){mv=0}
       else{if(S.tp){m.tpc-=dt;if(m.tpc<=0&&bd>3.5){m.tpc=rnd(2.2,4);emit('tp',{x:m.x,z:m.z});const a2=rnd(0,2*PI);m.x=n.x+Math.cos(a2)*2;m.z=n.z+Math.sin(a2)*2;bound(m);m.tx=m.x;m.tz=m.z;emit('tp',{x:m.x,z:m.z})}}mv=bd>rg-.4?1:0;if(bd<rg&&m.cd<=0){m.cd=Math.max(.6,1.1-.03*L);dmgP(n.id,S.d,MN,m.x,m.z)}}
       m.x+=(Math.sin(a)*mv*sp+Math.cos(a)*sx*sp+m.kx)*dt;m.z+=(Math.cos(a)*mv*sp-Math.sin(a)*sx*sp+m.kz)*dt}
     else{m.x+=m.kx*dt;m.z+=m.kz*dt}
